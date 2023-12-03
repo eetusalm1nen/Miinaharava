@@ -11,7 +11,7 @@ def game_over():
             if event.type == pygame.QUIT:
                 pygame.quit()
 
-        lataa_kuva = pygame.image.load("horror.jpg").convert()
+        lataa_kuva = pygame.image.load("scoreboard.jpg").convert()
         ikkuna.blit(lataa_kuva, (0, 0))
         pygame.display.flip()
 
