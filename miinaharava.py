@@ -7,7 +7,7 @@ from os import system, name
 def game_over():
     """Avaa koko näytön kokoisen ikkunan jossa on kuva."""
     
-    # ei toimi atm. ei tietoa onko vika funktion sisä- vai ulkopuolella vai tavassa käyttää funktiota
+    # toimii, mutta ei halutulla tavalla. vika on tavassa käyttää funktiota ja pygamea itsessään
     leveys, korkeus = 1600, 900
     ikkuna = pygame.display.set_mode((leveys, korkeus))
     pygame.display.set_caption("Game Over")
@@ -19,7 +19,7 @@ def game_over():
 
         lataa_kuva = pygame.image.load("scoreboard.jpg").convert()
         ikkuna.blit(lataa_kuva, (0, 0))
-        pygame.display.flip()   
+        pygame.display.flip()
 
 def kysy_koko():
     """Pelin esittely ja pelikentän koon kysyntä.
@@ -37,20 +37,20 @@ def kysy_koko():
     print("|_____|")
     print("Pelaat peliä Miinaharava Extended Horror Experience!")
     print()
-    print("Pelilaudan koot: pieni 5x5, iso 10x10")
+    print("Pelilaudat: pieni 5x5, iso 10x10")
     print()
 
     while True:
-        koko = input("Anna pelilaudan koko (pieni / iso): ")
+        koko = input("Anna pelilaudan koko: \"pieni\" / \"iso\": ")
         
         # koko määrittää rivien/sarakkeiden määrän (n) sekä pommine lukumäärän (lkm)
         if koko == "pieni":
             n = 5
-            lkm = 2
+            lkm = 3
             break
         elif koko == "iso":
             n = 10
-            lkm = 5
+            lkm = 13
             break
         else:
             print(f"Opettele kirjottaa, pls!")
@@ -59,8 +59,6 @@ def aseta_pommit():
     """Asettaa pommit satunnaisiin paikkoihin backend-matriisissa."""
     
     global mat_back
-    global x
-    global y
     global lkm
     
     # lkm = pommien lukumäärä (määritetään kysy_koko()-funktiossa)
@@ -85,15 +83,13 @@ def tulosta_ruudukko() -> str:
         # iteroidaan listan alkiot, jotta saadaa rivin jokaiseen slottiin oikeat arvot
         rivi = ""
         for alkio in range(0, n):
-            rivi += f"|  " + str(lista[alkio]) + "  "
+            rivi += "|  " + str(lista[alkio]) + "  "
         
-        # lisätään vaakariville vielä "päätypala"
-        rivi += "|"
-        print(rivi)
+        print(rivi + "|")
         print("|_____" * n + "|")
 
 def pelaajan_valinta():
-    """Kysytään avattavan ruudun koordinaatit."""
+    """Kysyy avattavan ruudun koordinaatit."""
     
     global toiminto
     global x
@@ -141,11 +137,12 @@ def numerointi():
                             mat_back[x][y] += 1
 
 def ruutujen_muutos_frontissa():
-    """Muuttaa ruutuja pelaajan antamien koordinaattien ympäriltä."""
+    """Muuttaa ruutuja pelaajan antamien koordinaattien perusteella."""
     
     global nakyvat
     global x
     global y
+    global g_over
     
     # lisätään koordinaatit jo valittujen joukkoon (täl listal ei atm mitään käyttöö)
     nakyvat.append((x, y))
@@ -162,21 +159,25 @@ def ruutujen_muutos_frontissa():
     else:
         # jos ruutu on 0 mat_backissa...
         if mat_back[y][x] == 0:
-            # ...niin muutetaan se fronttiin 0
-            mat_front[y][x] = mat_back[y][x]
-            
-            # tähän se koodi jolla se avaa vain ja ainoastaan ympäriltä ne ruudut jotka ei oo -1... tää ei toimi vv
-            for i in range(max(0, y-1), min(y+2, len(mat_back))):
-                for j in range(max(0, x-1), min(x+2, len(mat_back[i]))):
+            # ...niin muutetaan se ruutu 0 ja avataan muutkin ruudut siitä ympäriltä fronttiin
+            for y in range(max(0, y-1), min(y+2, len(mat_back))):
+                for x in range(max(0, x-1), min(x+2, len(mat_back[y]))):
                     if mat_back[y][x] != -1:
                         mat_front[y][x] = mat_back[y][x]
         
         # jos osutaan pommiin ;)
         elif mat_back[y][x] == -1:
-            mat_front[y][x] = "M"
+            # iteroidaan matriisi läpi ja muutetaan kaikki pommit fronttiin esille
+            for i in range(len(mat_back)):
+                for j in range(len(mat_back[i])):
+                    # jos huomataan -1 eli pommi:
+                    if mat_back[i][j] == -1:
+                        mat_front[i][j] = "M"
+            # ja päätetään peli     
             g_over = True
+        
+        # muussa tapauksessa avataan ainoastaan kyseinen ruutu
         else:
-            # muutetaan se fronttiin juuri siksi luvuksi (tähhh?)
             mat_front[y][x] = mat_back[y][x]          
 
 def ohjeet() -> str:
@@ -219,7 +220,7 @@ if __name__ == "__main__":
     aseta_pommit()
     numerointi()
     
-    # tällä hetkellä ruutujen_muutos_frontissa()-funktiossa testataan pommiin osumista (ei toimi)
+    # ruutujen_muutos_frontissa()-funktiossa testataan pommiin osumista
     g_over = False
     
     while not g_over:
@@ -229,8 +230,11 @@ if __name__ == "__main__":
         pelaajan_valinta()
         ruutujen_muutos_frontissa()
         
-        # ei toimi atm D:
         if g_over:
-            game_over()
-            break
-   
+            # pirkkaversio. tää ei oo horroria nähnykkää
+            tyhjenna_terminaali()
+            print("Miinaharavasi meni rikki ja osuit neuvostoaikaiseen räjähtämättömään sirpalemiinaan.")
+            print()
+            print("Olet nyt pyörätuolipotilas lopun ikäsi. Hävisit siis pelin :D")
+            tulosta_ruudukko()
+            exit()
