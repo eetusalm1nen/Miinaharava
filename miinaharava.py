@@ -53,7 +53,7 @@ def kysy_koko():
             lkm = 13
             break
         else:
-            print(f"Opettele kirjottaa, pls!")
+            print("Opettele kirjottaa, pls!")
             
 def aseta_pommit():
     """Asettaa pommit satunnaisiin paikkoihin backend-matriisissa."""
