@@ -210,8 +210,8 @@ def tyhjenna_terminaali():
     if name == "nt":
         _ = system("cls")
     # mac / linux
-    # else:
-        # _ = system("clear")
+    else:
+        _ = system("clear")
 
 def pistelaskuri(toiminnot=None):
     if toiminnot is None:
@@ -223,6 +223,24 @@ def pistelaskuri(toiminnot=None):
     tyhja_maara = toiminnot.count("")
 
     print(f"avasit ruudun {tyhja_maara} kertaa ja liputit {f_maara} kertaa! Hyvä sinä!:D")
+
+
+def tallenna_pelin_tiedot(avatut_ruudut, liputetut_ruudut):
+
+    """Tallentaa pelin tiedot tiedostoon."""
+
+    with open('pelin_tiedot.txt', 'w') as tiedosto:
+        tiedosto.write(f"Avasit {avatut_ruudut} ruutua! Hyvä sinä!\n")
+        tiedosto.write(f"Liputit {liputetut_ruudut} ruutua! Mahtavaa!\n")
+
+
+def tulosta_pelin_tiedot():
+
+    """Tulostaa pelin tiedot tiedostosta."""
+
+    with open('pelin_tiedot.txt', 'r') as tiedosto:
+        tiedot = tiedosto.read()
+        print(tiedot)
 
 
 
@@ -272,10 +290,8 @@ if __name__ == "__main__":
 
             avatut_ruudut = sum(row.count(" ") for row in mat_front)
             liputetut_ruudut = sum(row.count("F") for row in mat_front)
-            print(f"Avasit {avatut_ruudut} ruutua! Hyvä sinä!")
-            print(f"Liputit {liputetut_ruudut} ruutua! Mahtavaa!")
-
+          
+            tallenna_pelin_tiedot(avatut_ruudut, liputetut_ruudut)
+            tulosta_pelin_tiedot()
             tulosta_ruudukko()
-
-            
             exit()
