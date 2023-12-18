@@ -1,25 +1,7 @@
 """Viimeisin toimiva versio."""
 
-import pygame
 import random
 from os import system, name
-
-def game_over():
-    """Avaa koko näytön kokoisen ikkunan jossa on kuva."""
-    
-    # toimii, mutta ei halutulla tavalla. vika on tavassa käyttää funktiota ja pygamea itsessään
-    leveys, korkeus = 1600, 900
-    ikkuna = pygame.display.set_mode((leveys, korkeus))
-    pygame.display.set_caption("Game Over")
-
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-
-        lataa_kuva = pygame.image.load("scoreboard.jpg").convert()
-        ikkuna.blit(lataa_kuva, (0, 0))
-        pygame.display.flip()
 
 def kysy_koko():
     """Pelin esittely ja pelikentän koon kysyntä.
@@ -61,11 +43,15 @@ def aseta_pommit():
     global mat_back
     global lkm
     
+    i = 0
     # lkm = pommien lukumäärä (määritetään kysy_koko()-funktiossa)
-    for _ in range(lkm):
+    while i < lkm:
         sat_rivi = random.randint(0, n - 1)
         sat_sarake = random.randint(0, n - 1)
-        mat_back[sat_rivi][sat_sarake] = -1
+        if mat_back[sat_rivi][sat_sarake] != -1:
+            mat_back[sat_rivi][sat_sarake] = -1
+            pommit.append((sat_rivi, sat_sarake))
+            i += 1           
 
 def tulosta_ruudukko() -> str:
     """Tulostaa pelilaudan ruudukkona."""
@@ -82,7 +68,7 @@ def tulosta_ruudukko() -> str:
         
         # iteroidaan listan alkiot, jotta saadaa rivin jokaiseen slottiin oikeat arvot
         rivi = ""
-        for alkio in range(0, n):
+        for alkio in range(n):
             rivi += "|  " + str(lista[alkio]) + "  "
         
         print(rivi + "|")
@@ -94,7 +80,7 @@ def pelaajan_valinta():
     global toiminto
     global x
     global y
-    
+
     # looppi yksinkertaista virheenkäsittelyä varten
     while True:
         try:
@@ -103,20 +89,21 @@ def pelaajan_valinta():
             # jos haluu pelistä vittuun
             if toiminto == "å":
                 exit()
-                
+            elif (toiminto != "") and (toiminto != "f"):
+                print("Virheellinen toiminto!")
+                continue
+         
             x = int(input("Anna x: "))
             y = int(input("Anna y: "))
             
-            if (toiminto != "") and (toiminto != "f"):
-                print("Virheellinen toiminto!")
-            elif (x > n) or (x < 0) or (y > n) or (y < 0):
-                print(f"Anna lukuja vain väliltä 0 - {n}.")
+            if (x > n) or (x < 0) or (y > n) or (y < 0):
+                print(f"Anna lukuja vain väliltä 0-{n}.")
             else:
                 break
         except ValueError:
             print("Vain numerot kelpaavat!")
     
-    # muutetaan koordinaatit python-ystävällisiksi (listojen eka on indeksi 0 eikä 1!)
+    # muutetaan reaalimaailman koordinaatit python-ystävällisiksi (listojen eka indeksi 0 eikä 1!)
     x -= 1
     y -= 1
     
@@ -142,18 +129,23 @@ def ruutujen_muutos_frontissa():
     global nakyvat
     global x
     global y
-    global g_over
-    
-    # lisätään koordinaatit jo valittujen joukkoon (täl listal ei atm mitään käyttöö)
-    nakyvat.append((x, y))
-    
+    global peli_loppu
+    global voitto
+    global lkm
+        
     # liputus
     if toiminto == "f":
         if mat_front[y][x] != "F":
-            mat_front[y][x] = "F"
+            # katsotaan montako lippua on vielä käytettävissä
+            if len(liput) < lkm:
+                mat_front[y][x] = "F"
+                # lisätään koordinaatit liputettujen ruutujen listaan
+                liput.append((y, x))
         # lipun muutos tyhjäksi
         elif mat_front[y][x] == "F":
             mat_front[y][x] = " "
+            # poistetaan koordinaatit liputettujen ruutujen listaan
+            liput.remove((y, x))
             
     # ruudun avaus moodi
     else:
@@ -164,9 +156,13 @@ def ruutujen_muutos_frontissa():
                 for x in range(max(0, x-1), min(x+2, len(mat_back[y]))):
                     if mat_back[y][x] != -1:
                         mat_front[y][x] = mat_back[y][x]
+                        # lisätään koordinaatit avattujen ruutujen listaan
+                        nakyvat.append((y, x))
         
         # jos osutaan pommiin ;)
         elif mat_back[y][x] == -1:
+            # lisätään koordinaatit avattujen ruutujen listaan
+            nakyvat.append((y, x))
             # iteroidaan matriisi läpi ja muutetaan kaikki pommit fronttiin esille
             for i in range(len(mat_back)):
                 for j in range(len(mat_back[i])):
@@ -174,13 +170,25 @@ def ruutujen_muutos_frontissa():
                     if mat_back[i][j] == -1:
                         mat_front[i][j] = "M"
             # ja päätetään peli     
-            g_over = True
+            peli_loppu = True
         
         # muussa tapauksessa avataan ainoastaan kyseinen ruutu
         else:
-            mat_front[y][x] = mat_back[y][x]          
-
-def ohjeet() -> str:
+            mat_front[y][x] = mat_back[y][x]
+            # lisätään koordinaatit avattujen ruutujen listaan
+            nakyvat.append((y, x))
+    
+    # testataan voittoa (onko kaikki pommit liputettu)
+    maara = 0
+    for lippu in liput:
+        if lippu in pommit:
+            maara += 1
+    
+    if maara == lkm:    
+        peli_loppu = True
+        voitto = True
+        
+def ohjeet_str() -> str:
     """Tulostaa ohjeet / perusnäkymän pelin alettua."""
     
     print("Miinaharava Extended Horror Experience!")
@@ -194,11 +202,56 @@ def tyhjenna_terminaali():
     if name == "nt":
         _ = system("cls")
     # mac / linux
-    # else:
-        # _ = system("clear")
-        
-      
-# kvg mitä meinaa :D (taitaa olla vähän turha mut näyttää ainaki kivalt)
+    else:
+        _ = system("clear")
+
+def tallenna_pelin_tiedot(avatut_ruudut, liputetut_ruudut):
+    """Tallentaa pelin tiedot tiedostoon."""
+    
+    with open('pelin_tiedot.txt', 'w') as tiedosto:
+        tiedosto.write(f"Avasit {avatut_ruudut} ruutua! Hyvä sinä!\n")
+        tiedosto.write(f"Liputit {liputetut_ruudut} ruutua! Mahtavaa!\n")
+    pass
+
+def tulosta_pelin_tiedot():
+    """Tulostaa pelin tiedot tiedostosta."""
+    
+    with open('pelin_tiedot.txt', 'r') as tiedosto:
+        tiedot = tiedosto.read()
+        print(tiedot)
+    pass
+
+def tappio_str() -> str:
+    print("Miinaharavasi meni rikki ja osuit neuvostoaikaiseen räjähtämättömään sirpalemiinaan.")
+    print()
+    print("Olet nyt pyörätuolipotilas lopun ikäsi. Hävisit siis pelin :D")
+    
+def voitto_str() -> str:
+    print("Voitit pelin lol")
+    print()
+    print()
+    
+def alusta_listat_ja_matriisit():
+    """Alustaa listat ja matriisit."""
+    
+    global mat_back
+    global mat_front
+    global pommit
+    global liput
+    global nakyvat
+    
+    # backend-matriisi
+    mat_back = [[0 for rivi in range(n)] for sarake in range(n)] 
+    # frontend-matriisi
+    mat_front = [[" " for rivi in range(n)] for sarake in range(n)]
+    # pommien koordinaatit
+    pommit = []
+    # lippujen koordinaatit
+    liput = []
+    # avatut ruudut
+    nakyvat = []
+
+# PÄÄOHJELMA
 if __name__ == "__main__":
     """Käytännössä peli pelataan tässä."""
     
@@ -207,34 +260,31 @@ if __name__ == "__main__":
     # kysytään alkuarvoja
     kysy_koko()
     
-    # backend-matriisi
-    mat_back = [[0 for rivi in range(n)] for sarake in range(n)] 
-    # frontend-matriisi
-    mat_front = [[" " for rivi in range(n)] for sarake in range(n)]
-    # listataan liputetut koordinaatit (tupleina?) atm hyödytön
-    liput = []
-    # listataan jo näkyvissä olevat ruudut (tupleina?) atm hyödytön
-    nakyvat = []
-    
-    # asetetaan pommit ja niiden ympärille numerot mat_backiin
+    # alustetaan matriisit ja listat sekä asetetaan mat_backiin pommit ja niiden ympärille numerot
+    alusta_listat_ja_matriisit()
     aseta_pommit()
     numerointi()
     
-    # ruutujen_muutos_frontissa()-funktiossa testataan pommiin osumista
-    g_over = False
+    # ruutujen_muutos_frontissa()-funktiossa testataan pommiin osumista sekä voittoa
+    peli_loppu = False
+    voitto = False
     
-    while not g_over:
+    while not peli_loppu:
         tyhjenna_terminaali()
-        ohjeet()
+        ohjeet_str()
         tulosta_ruudukko()
         pelaajan_valinta()
         ruutujen_muutos_frontissa()
         
-        if g_over:
-            # pirkkaversio. tää ei oo horroria nähnykkää
-            tyhjenna_terminaali()
-            print("Miinaharavasi meni rikki ja osuit neuvostoaikaiseen räjähtämättömään sirpalemiinaan.")
-            print()
-            print("Olet nyt pyörätuolipotilas lopun ikäsi. Hävisit siis pelin :D")
-            tulosta_ruudukko()
-            exit()
+        if peli_loppu:
+            if voitto:
+                tyhjenna_terminaali()
+                voitto_str()
+                tulosta_ruudukko()
+                exit()
+            else:
+                tyhjenna_terminaali()
+                tappio_str()
+                tulosta_ruudukko()
+                exit()
+        
