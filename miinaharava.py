@@ -273,7 +273,7 @@ def kysy_lopetus():
 
 # PÄÄOHJELMA
 if __name__ == "__main__":
-    """Käytännössä peli pelataan tässä."""
+    """Käytännössä peliä pelataan tässä."""
     
     lopeta_pelaaminen = False
     
